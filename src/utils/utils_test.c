@@ -1,12 +1,12 @@
 #include <criterion/criterion.h>
 #include <criterion/redirect.h>
 
-#include <utils.h>
+#include <cchad/utils.h>
 
-Test(util_kek, base) {
+Test(utils, kek) {
   cr_redirect_stdout();
 
-  cc_kek();
+  kek();
 
   cr_expect_stdout_eq_str("kek\n");
 }

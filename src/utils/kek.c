@@ -1,5 +1,5 @@
 #include <unistd.h>
 
-void cc_kek(void) {
+void kek(void) {
   write(STDOUT_FILENO, "kek\n", 4);
 }

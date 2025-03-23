@@ -1,8 +1,9 @@
 SHELL = bash
 
-NAME = toolbox
+NAME = cchad
 
 CC = clang-19
+LINT = clang-tidy-19
 AR = ar rcs
 MKDIR = mkdir -p
 RM = rm -rf
@@ -32,9 +33,9 @@ ifndef BUILD_TYPE
 endif
 
 ifeq ($(BUILD_TYPE), debug)
-	CFLAGS += -g3 -fsanitize=address
+	CFLAGS += -fsanitize=address
 else ifeq ($(BUILD_TYPE), production)
-	CFLAGS += -O3 -ndebug
+	CFLAGS += -O3 -DNDEBUG
 else ifneq ($(BUILD_TYPE), lsp)
 	$(error Invalid value for BUILD_TYPE: $(BUILD_TYPE))
 endif
@@ -54,7 +55,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 test: $(TEST_TARGET)
-	./$(TEST_TARGET)
+	LSAN_OPTIONS=suppressions=lsan_suppressions.txt:print_suppressions=0 ./$(TEST_TARGET)
 
 $(TEST_TARGET): $(TEST_OBJ) $(TARGET)
 	$(CC) $(CFLAGS) $(TEST_OBJ) -o $@ -lcriterion -L. -l$(NAME) 
@@ -63,8 +64,14 @@ $(BUILD_DIR)/%_test.o: $(SRC_DIR)/%_test.c
 	$(MKDIR) $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-compile_flags.txt:
-	echo '$(CFLAGS)' | tr ' ' '\n' > $@
+compiledb:
+	BUILD_TYPE=lsp compiledb -n $(MAKE)
+
+compiledb_test:
+	BUILD_TYPE=lsp compiledb -n $(MAKE) $(TEST_TARGET)
+
+lint:
+	$(LINT) $$(find . -type f \( -name '*.c' -o -name '*.h' \))
 
 clean:
 	$(RM) $(BUILD_DIR)
@@ -77,4 +84,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all $(NAME) test clean fclean re
+.PHONY: all $(NAME) test lint clean fclean re
